@@ -1,5 +1,7 @@
 package com.pianorang.money.sprinkle.history;
 
+import java.time.LocalDateTime;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -9,20 +11,24 @@ import javax.persistence.ManyToOne;
 import javax.swing.Spring;
 
 import com.pianorang.money.sprinkle.Sprinkle;
+import com.pianorang.money.user.User;
 
 @Entity
 public class SprinkleHistory {
 	
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
 	@ManyToOne(targetEntity = Sprinkle.class, fetch = FetchType.LAZY)
-	private Long sprinkleId;
+	private Sprinkle sprinkle;
 	
-	private Long amount;
+	private Long amount;	
 	
-	private Long userId;
+	@ManyToOne(targetEntity = User.class, fetch = FetchType.LAZY)
+	private User receivedUser;
+	
+	private LocalDateTime receivedDate;
 
 	public Long getId() {
 		return id;
@@ -30,14 +36,14 @@ public class SprinkleHistory {
 
 	public void setId(Long id) {
 		this.id = id;
+	}	
+	
+	public Sprinkle getSprinkle() {
+		return sprinkle;
 	}
 
-	public Long getSprinkleId() {
-		return sprinkleId;
-	}
-
-	public void setSprinkleId(Long sprinkleId) {
-		this.sprinkleId = sprinkleId;
+	public void setSprinkle(Sprinkle sprinkle) {
+		this.sprinkle = sprinkle;
 	}
 
 	public Long getAmount() {
@@ -48,13 +54,25 @@ public class SprinkleHistory {
 		this.amount = amount;
 	}
 
-	public Long getUserId() {
-		return userId;
+	public User getReceivedUser() {
+		return receivedUser;
 	}
 
-	public void setUserId(Long userId) {
-		this.userId = userId;
+	public void setReceivedUser(User receivedUser) {
+		this.receivedUser = receivedUser;
 	}
+
+	public LocalDateTime getReceivedDate() {
+		return receivedDate;
+	}
+
+	public void setReceivedDate(LocalDateTime receivedDate) {
+		this.receivedDate = receivedDate;
+	}
+
+	
+	
+	
 	
 	
 }

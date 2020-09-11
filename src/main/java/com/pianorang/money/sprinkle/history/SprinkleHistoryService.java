@@ -24,20 +24,28 @@ public class SprinkleHistoryService {
 		
 		for (int i = 0; i < headCount; i++) {
 			
+			SprinkleHistory entity = new SprinkleHistory();
+			entity.setSprinkle(sprinkle);
+			
 			if(i < (headCount-1)) {				
 			
 				int percentage = random.nextInt(limit) + 1;
 				Long amt = totalAmount * percentage / 100;
 				totalAmount = totalAmount - amt;
-				
-				SprinkleHistory entity = new SprinkleHistory();
-				entity.setSprinkleId(sprinkle.getId());
-				entity.setAmount(amt);				
-				
-				historyRepository.save(entity);
+				entity.setAmount(amt);
 			}
+			else {
+				entity.setAmount(totalAmount);
+			}			
+							
+			
+			historyRepository.save(entity);
 		}
 		
+	}
+	
+	public SprinkleHistory getVerifyMoney() {
+		return historyRepository.findVerifyMoney();
 	}
 	
 }

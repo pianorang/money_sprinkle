@@ -4,20 +4,27 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+
+import com.pianorang.money.room.Room;
+import com.pianorang.money.user.User;
 
 @Entity
 public class Sprinkle {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private Long id;	
 	
-	private String roomId;
+	@ManyToOne(targetEntity = Room.class, fetch = FetchType.LAZY)
+	private Room room;
 	
-	private Long createUserId;
+	@ManyToOne(targetEntity = User.class, fetch = FetchType.LAZY)
+	private User createUser;
 	
 	private Long amount;
 	
@@ -25,26 +32,30 @@ public class Sprinkle {
 	
 	private String token;
 	
-	private LocalDateTime expirationDate;
+	private LocalDateTime tokenCreateDate;
 
 	public Long getId() {
 		return id;
 	}
 	
-	public String getRoomId() {
-		return roomId;
+	public void setId(Long id) {
+		this.id = id;
 	}
 
-	public void setRoomId(String roomId) {
-		this.roomId = roomId;
+	public Room getRoom() {
+		return room;
 	}
 
-	public Long getCreateUserId() {
-		return createUserId;
+	public void setRoom(Room room) {
+		this.room = room;
 	}
 
-	public void setCreateUserId(Long createUserId) {
-		this.createUserId = createUserId;
+	public User getCreateUser() {
+		return createUser;
+	}
+
+	public void setCreateUser(User createUser) {
+		this.createUser = createUser;
 	}
 
 	public String getToken() {
@@ -53,14 +64,14 @@ public class Sprinkle {
 
 	public void setToken(String token) {
 		this.token = token;
+	}	
+
+	public LocalDateTime getTokenCreateDate() {
+		return tokenCreateDate;
 	}
 
-	public LocalDateTime getExpirationDate() {
-		return expirationDate;
-	}
-
-	public void setExpirationDate(LocalDateTime expirationDate) {
-		this.expirationDate = expirationDate;
+	public void setTokenCreateDate(LocalDateTime tokenCreateDate) {
+		this.tokenCreateDate = tokenCreateDate;
 	}
 
 	public Long getAmount() {
@@ -79,12 +90,7 @@ public class Sprinkle {
 		this.headCount = headCount;
 	}
 
-	@Override
-	public String toString() {
-		return "Sprinkle [id=" + id + ", roomId=" + roomId + ", createUserId=" + createUserId + ", amount=" + amount
-				+ ", headCount=" + headCount + ", token=" + token + ", expirationDate=" + expirationDate
-				+ ", toString()=" + super.toString() + "]";
-	}
+	
 	
 	
 	
