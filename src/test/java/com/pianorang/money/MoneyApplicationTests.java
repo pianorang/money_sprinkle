@@ -8,7 +8,7 @@ class MoneyApplicationTests {
 
 	@Test
 	void contextLoads() {
-		
+
 	}
 
 }

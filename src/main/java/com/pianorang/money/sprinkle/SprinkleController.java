@@ -1,10 +1,13 @@
 package com.pianorang.money.sprinkle;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.LongStream;
 
+import com.pianorang.money.exception.InvalidParameterException;
+import com.pianorang.money.exception.InvalidUserException;
+import com.pianorang.money.sprinkle.history.SprinkleHistoryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,43 +35,43 @@ import com.pianorang.money.util.Util;
 public class SprinkleController {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	
-	@Autowired
-	SprinkleService sprinkleService;
-	
-	@Autowired
-	SprinkleHistoryService sprinkleHistoryService;
-	
-	@Autowired
-	RoomService roomService;
-	
+
+	private SprinkleService sprinkleService;
+
+	private SprinkleHistoryService sprinkleHistoryService;
+
+	private RoomService roomService;
+
+	public SprinkleController(SprinkleService sprinkleService, SprinkleHistoryService sprinkleHistoryService, RoomService roomService) {
+		this.sprinkleService = sprinkleService;
+		this.sprinkleHistoryService = sprinkleHistoryService;
+		this.roomService = roomService;
+	}
+
 	@PostMapping("sprinkle/send")
-	public Map<String, String> sprinkle(@RequestHeader("X-USER-ID") Long userId, @RequestHeader("X-ROOM-ID") String roomId, @RequestBody Sprinkle sprinkle)  {		
-		
-		Map<String, String> result = new HashMap<String, String>();
+	public Map<String, Object> sprinkleMoney(@RequestHeader("X-USER-ID") Long userId, @RequestHeader("X-ROOM-ID") String roomId, @RequestBody Sprinkle sprinkle)  {
+
+		Map<String, Object> result = new HashMap<String, Object>();
 		
 		//roomId, userId 검증
-		User user = roomService.verifyUser(roomId, userId);
-		
-		if(user != null) {
-			String token = Util.generateToken();
-			
-			sprinkle.setCreateUser(user);
-			sprinkle.setRoom(new Room(roomId));
-			sprinkle.setToken(token);
-			sprinkle.setTokenCreateDate(LocalDateTime.now());
-			
-			Sprinkle dbSprinkle = sprinkleService.save(sprinkle);		
-			
-			sprinkleHistoryService.saveHistory(dbSprinkle);
-			
-			result.put("status", "ok");
-			result.put("token", token);
+			User user = roomService.verifyUser(roomId, userId);
+
+			if(user!= null && sprinkle.getAmount() != null && sprinkle.getAmount() > 0
+					&& sprinkle.getHeadCount() > 0 ) {
+				String token = Util.generateToken();
+
+				sprinkle.setCreateUser(user);
+				sprinkle.setRoom(new Room(roomId));
+				sprinkle.setToken(token);
+				sprinkle.setTokenCreateDate(LocalDateTime.now());
+
+				sprinkleService.save(sprinkle);
+
+				result.put("token", token);
 			
 		}
 		else {
-			result.put("status", "no");
-			result.put("msg", "파라미터가 유효하지 않습니다.");
+			throw new InvalidParameterException();
 		}
 		
 		return result;
@@ -76,51 +79,47 @@ public class SprinkleController {
 	
 	
 	@PostMapping("sprinkle/receive")
-	public Map<String, String> moneyReceive(@RequestHeader("X-USER-ID") Long userId, @RequestHeader("X-ROOM-ID") String roomId, @RequestBody String token)  {		
-		
-		Map<String, String> result = new HashMap<String, String>();
-		
-		//roomId, userId 검증
-		User user = roomService.verifyUser(roomId, userId);
-		
-		if(user != null) {
-			Sprinkle sprinkle = sprinkleService.verifySprinkle(roomId, userId, token);
-			
-			if(sprinkle != null) {
-				SprinkleHistory sprinkleHistory = sprinkleHistoryService.getVerifyMoney();
-				
-				if(sprinkleHistory != null) {
-					
-					sprinkleHistory.setReceivedUser(new User(userId));
-					sprinkleHistory.setReceivedDate(LocalDateTime.now());
-					
-					result.put("status", "ok");
-					result.put("token", token);
-				}
-			}
+	public SprinkleReceiveDto moneyReceive(@RequestHeader("X-USER-ID") Long userId,
+											@RequestHeader("X-ROOM-ID") String roomId,
+											@RequestBody HashMap<String, Object> param)  {
+
+		String token = "";
+		if (param.containsKey("token") && param.get("token") != null){
+			token = param.get("token").toString();
 		}
-		
-		
-		
-		
-		
-		
-		return result;
+		else{
+			throw new InvalidParameterException();
+		}
+
+		//roomId, userId 검증
+		roomService.verifyUser(roomId, userId);
+		Sprinkle sprinkle = sprinkleService.verifySprinkleForReceive(roomId, userId, token);
+
+		//뿌리기 머니 받기
+		SprinkleHistory sprinkleHistory = sprinkleHistoryService.receiveMoney(sprinkle.getId(), userId);
+
+		return new SprinkleReceiveDto(sprinkleHistory.getAmount());
 	}
-	
-	
-	@ExceptionHandler()  
-	public Map<String, String> nfeHandler(Exception e){
-		
-		logger.debug(e.getMessage());
-		
-		Map<String, String> result = new HashMap<String, String>();
-		result.put("status", "no");
-		result.put("msg", "파라미터가 유효하지 않습니다.");
-		
-		return result;
-	}  
 
+	@GetMapping("sprinkle")
+	public SprinkleDto view(@RequestHeader("X-USER-ID") Long userId,
+									@RequestHeader("X-ROOM-ID") String roomId,
+									@RequestParam String token)  {
 
-	
+		//뿌린 사람인지 체크
+		Sprinkle sprinkle = sprinkleService.verifySprinkleOwnerForView(userId, token);
+
+		//받은 사용자 리스트
+		List<SprinkleHistoryDto> history = sprinkleHistoryService.getReceivedList(sprinkle.getId());
+
+		//받아간금액 총액
+		Long totalReceivedAmount = history.stream().mapToLong(i-> i.getAmount()).sum();
+
+		return new SprinkleDto(
+				sprinkle.getTokenCreateDate(),
+				sprinkle.getAmount(),
+				totalReceivedAmount,
+				history
+		);
+	}
 }

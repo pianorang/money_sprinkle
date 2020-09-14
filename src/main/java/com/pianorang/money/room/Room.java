@@ -10,14 +10,15 @@ import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 
 import com.pianorang.money.user.User;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Getter @Setter
+@NoArgsConstructor
 public class Room {
-	
-	public Room() {
-		
-	}
-	
+
 	public Room(String id) {		
 		this.id = id;
 	}
@@ -29,31 +30,5 @@ public class Room {
 	
 	@ManyToMany(targetEntity = User.class, fetch = FetchType.LAZY)	
 	private List<User> userList;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}	
-	
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public List<User> getUserList() {
-		return userList;
-	}
-
-	public void setUserList(List<User> userList) {
-		this.userList = userList;
-	}
-	
-	
 	
 }
